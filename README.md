@@ -1,3 +1,12 @@
+# !!!JDNorthAmerica Notice!!!
+This repo is a fork of the orignial DataflowTemplates repo: https://github.com/GoogleCloudPlatform/DataflowTemplates
+
+As of this writing, only the MongoDB_to_BigQuery template has been changed. There are instucrtions in that packages repo on how to build it and push it to GCP, but note that you need to run the following command at the root of the repo first:
+
+```mvn clean install```
+
+This will take a long time the first time it is ran!
+
 # Google Cloud Dataflow Template Pipelines
 
 These Dataflow templates are an effort to solve simple, but large, in-Cloud data

@@ -90,7 +90,6 @@ public class MongoDbUtils implements Serializable {
               .setName("source_data")
               .setType(userOption.equals("JSON") ? "JSON" : "STRING"));
     }
-    bigquerySchemaFields.add(new TableFieldSchema().setName("timestamp").setType("TIMESTAMP"));
     TableSchema bigquerySchema = new TableSchema().setFields(bigquerySchemaFields);
     return bigquerySchema;
   }
@@ -133,6 +132,7 @@ public class MongoDbUtils implements Serializable {
             }
 
             String valueClass = value.getClass().getName();
+            LOG.info("Processing key: {}, valueClass: {}", key, valueClass); // Add this line
             switch (valueClass) {
               case "java.lang.Double":
               case "java.lang.Integer":
@@ -144,11 +144,22 @@ public class MongoDbUtils implements Serializable {
                 String data = GSON.toJson(value);
                 row.set(key, data);
                 break;
+              case "java.util.ArrayList":
+                // This is the critical fix for the REPEATED RECORD field.
+                // We convert the list of BSON Documents into a list of TableRows.
+                List<Object> valueList = (List<Object>) value;
+                List<TableRow> rowList = new ArrayList<>();
+                for (Object element : valueList) {
+                  if (element instanceof Document) {
+                    rowList.add(getTableSchema((Document) element, userOption));
+                  }
+                }
+                row.set(key, rowList);
+                break;
               default:
                 row.set(key, value.toString());
             }
           });
-      row.set("timestamp", localDate.format(TIMEFORMAT));
     } else if (userOption.equals("JSON")) {
       JsonObject sourceDataJsonObject = GSON.toJsonTree(document).getAsJsonObject();
 
@@ -156,15 +167,11 @@ public class MongoDbUtils implements Serializable {
       Map<String, Object> sourceDataMap =
           GSON.fromJson(sourceDataJsonObject, new TypeToken<Map<String, Object>>() {}.getType());
 
-      row.set("id", document.get("_id").toString())
-          .set("source_data", sourceDataMap)
-          .set("timestamp", localDate.format(TIMEFORMAT));
+      row.set("id", document.get("_id").toString()).set("source_data", sourceDataMap);
     } else {
       String sourceData = GSON.toJson(document);
 
-      row.set("id", document.get("_id").toString())
-          .set("source_data", sourceData)
-          .set("timestamp", localDate.format(TIMEFORMAT));
+      row.set("id", document.get("_id").toString()).set("source_data", sourceData);
     }
     return row;
   }
@@ -218,7 +225,6 @@ public class MongoDbUtils implements Serializable {
               .setType(userOption.equals("JSON") ? "JSON" : "STRING"));
     }
 
-    bigquerySchemaFields.add(new TableFieldSchema().setName("timestamp").setType("TIMESTAMP"));
     TableSchema bigquerySchema = new TableSchema().setFields(bigquerySchemaFields);
     return bigquerySchema;
   }

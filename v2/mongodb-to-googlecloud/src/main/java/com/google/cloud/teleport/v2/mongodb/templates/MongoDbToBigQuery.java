@@ -45,6 +45,8 @@ import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.bson.BsonDocument;
 import org.bson.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The {@link MongoDbToBigQuery} pipeline is a batch pipeline which ingests data from MongoDB and
@@ -72,6 +74,7 @@ import org.bson.Document;
       "The source MongoDB instance must be accessible from the Dataflow worker machines."
     })
 public class MongoDbToBigQuery {
+  private static final Logger LOG = LoggerFactory.getLogger(MongoDbToBigQuery.class);
   /**
    * Options supported by {@link MongoDbToBigQuery}
    *
@@ -173,7 +176,7 @@ public class MongoDbToBigQuery {
                 .to(options.getOutputTableSpec())
                 .withSchema(bigquerySchema)
                 .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
-                .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND));
+                .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE));
     pipeline.run();
     return true;
   }
