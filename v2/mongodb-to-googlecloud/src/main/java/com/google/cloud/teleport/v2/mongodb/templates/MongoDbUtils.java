@@ -141,20 +141,26 @@ public class MongoDbUtils implements Serializable {
                 row.set(key, value);
                 break;
               case "org.bson.Document":
-                String data = GSON.toJson(value);
-                row.set(key, data);
+                row.set(key, getTableSchema((Document) value, userOption));
                 break;
               case "java.util.ArrayList":
-                // This is the critical fix for the REPEATED RECORD field.
-                // We convert the list of BSON Documents into a list of TableRows.
                 List<Object> valueList = (List<Object>) value;
-                List<TableRow> rowList = new ArrayList<>();
-                for (Object element : valueList) {
-                  if (element instanceof Document) {
+                if (valueList.isEmpty()) {
+                  row.set(key, new ArrayList<>()); // Handle empty arrays.
+                  break;
+                }
+                // Check the type of the first element to decide how to process the list.
+                Object firstElement = valueList.get(0);
+                if (firstElement instanceof Document) {
+                  List<TableRow> rowList = new ArrayList<>();
+                  for (Object element : valueList) {
                     rowList.add(getTableSchema((Document) element, userOption));
                   }
+                  row.set(key, rowList);
+                } else {
+                  // The list contains simple types (String, Number, etc.), so add it directly.
+                  row.set(key, valueList);
                 }
-                row.set(key, rowList);
                 break;
               default:
                 row.set(key, value.toString());
