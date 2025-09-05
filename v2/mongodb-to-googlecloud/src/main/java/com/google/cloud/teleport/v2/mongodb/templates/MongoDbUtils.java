@@ -141,8 +141,7 @@ public class MongoDbUtils implements Serializable {
                 row.set(key, value);
                 break;
               case "org.bson.Document":
-                String data = GSON.toJson(value);
-                row.set(key, data);
+                row.set(key, getTableSchema((Document) value, userOption));
                 break;
               case "java.util.ArrayList":
                 // This is the critical fix for the REPEATED RECORD field.
